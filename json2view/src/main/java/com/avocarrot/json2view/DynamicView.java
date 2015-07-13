@@ -26,26 +26,28 @@ public class DynamicView {
     /**
      * @param jsonObject : json object
      * @param holderClass : class that will be created as an holder and attached as a tag in the View
+     * @param pHandler
      * @return the view that created
      */
-    public static View createView (Context context, JSONObject jsonObject, Class holderClass) {
-        return createView(context, jsonObject, null, holderClass);
+    public static View createView(Context context, JSONObject jsonObject, Class holderClass, Class pHandler) {
+        return createView(context, jsonObject, null, holderClass, pHandler);
     }
 
     /**
      * @param jsonObject : json object
      * @param parent : parent viewGroup
      * @param holderClass : class that will be created as an holder and attached as a tag in the View, If contains HashMap ids will replaced with idsMap
+     * @param pHandler
      * @return the view that created
      */
-    public static View createView (Context context, JSONObject jsonObject, ViewGroup parent, Class holderClass) {
+    public static View createView(Context context, JSONObject jsonObject, ViewGroup parent, Class holderClass, Class pHandler) {
 
         if (jsonObject==null)
             return null;
 
         HashMap<String, Integer> ids = new HashMap<>();
 
-        View container = createViewInternal(context, jsonObject, parent, ids);
+        View container = createViewInternal(context, jsonObject, parent, ids, pHandler);
 
         if (container==null)
             return null;
@@ -81,27 +83,30 @@ public class DynamicView {
     /**
      * @param jsonObject : json object
      * @param parent : parent viewGroup
+     * @param pHandler
      * @return the view that created
      */
-    public static View createView (Context context, JSONObject jsonObject, ViewGroup parent) {
-        return createView(context, jsonObject, parent, null);
+    public static View createView(Context context, JSONObject jsonObject, ViewGroup parent, Class pHandler) {
+        return createView(context, jsonObject, parent, null, pHandler);
     }
 
     /**
      * @param jsonObject : json object
+     * @param pHandler
      * @return the view that created
      */
-    public static View createView (Context context, JSONObject jsonObject) {
-        return createView(context, jsonObject, null, null);
+    public static View createView(Context context, JSONObject jsonObject, Class pHandler) {
+        return createView(context, jsonObject, null, null, pHandler);
     }
 
     /**
      * use internal to parse the json as a tree to create View
      * @param jsonObject : json object
      * @param ids : the hashMap where we keep ids as string from json to ids as int in the layout
+     * @param pHandler
      * @return the view that created
      */
-    private static View createViewInternal (Context context, JSONObject jsonObject, ViewGroup parent, HashMap<String, Integer> ids) {
+    private static View createViewInternal(Context context, JSONObject jsonObject, ViewGroup parent, HashMap<String, Integer> ids, Class pHandler) {
 
         View view = null;
 
@@ -113,6 +118,7 @@ public class DynamicView {
             if (!widget.contains(".")) {
                 widget = "android.widget." + widget;
             }
+            widget = widget.replace("android.widget.View","android.view.View");
             Class viewClass = Class.forName(widget);
             /* create the actual view object */
             view = (View) viewClass.getConstructor(Context.class).newInstance(new Object[] { context });
@@ -153,7 +159,7 @@ public class DynamicView {
             view.setTag(INTERNAL_TAG_ID, properties);
 
             /* add and integer as a universal id  and keep it in a hashmap */
-            String id = DynamicHelper.applyStyleProperties(view, properties);
+            String id = DynamicHelper.applyStyleProperties(view, properties, pHandler);
             if (!TextUtils.isEmpty(id)) {
                 /* to target older versions we cannot use View.generateViewId();  */
                 ids.put(id, mCurrentId);
@@ -172,7 +178,7 @@ public class DynamicView {
                     int count=jViews.length();
                     for (int i=0;i<count;i++) {
                         /* create every child add it in viewGroup and set its tag with its properties */
-                        View dynamicChildView = DynamicView.createViewInternal(context, jViews.getJSONObject(i), parent, ids);
+                        View dynamicChildView = DynamicView.createViewInternal(context, jViews.getJSONObject(i), parent, ids, pHandler);
                         views.add(dynamicChildView);
                         viewGroup.addView(dynamicChildView);
                     }

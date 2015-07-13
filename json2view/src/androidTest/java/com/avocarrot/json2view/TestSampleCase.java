@@ -2,8 +2,6 @@ package com.avocarrot.json2view;
 
 import android.content.Context;
 import android.test.InstrumentationTestCase;
-import android.test.RenamingDelegatingContext;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -28,7 +26,7 @@ public class TestSampleCase extends InstrumentationTestCase {
         context = getInstrumentation().getContext();
         jsonObject = Utils.readJson("sample.json", context);
         assertNotNull("Cannot parse json", jsonObject);
-        view2test = DynamicView.createView(context, jsonObject);
+        view2test = DynamicView.createView(context, jsonObject, pHandler);
         assertNotNull("Cannot create dynamic View", view2test);
 
     }

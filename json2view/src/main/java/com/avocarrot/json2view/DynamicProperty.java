@@ -49,13 +49,17 @@ public class DynamicProperty {
         ID,
         LAYOUT_WIDTH,
         LAYOUT_HEIGHT,
-        PADDING_LEFT,
-        PADDING_RIGHT,
-        PADDING_TOP,
-        PADDING_BOTTOM,
+        PADDINGLEFT,
+        PADDINGSTART,
+        PADDINGRIGHT,
+        PADDINGEND,
+        PADDINGTOP,
+        PADDINGBOTTOM,
         PADDING,
         LAYOUT_MARGINLEFT,
+        LAYOUT_MARGINSTART,
         LAYOUT_MARGINRIGHT,
+        LAYOUT_MARGINEND,
         LAYOUT_MARGINTOP,
         LAYOUT_MARGINBOTTOM,
         LAYOUT_MARGIN,
@@ -74,11 +78,13 @@ public class DynamicProperty {
         TEXTSTYLE,
         ELLIPSIZE,
         MAXLINES,
+        SINGLELINE,
         GRAVITY,
         DRAWABLETOP,
         DRAWABLEBOTTOM,
         DRAWABLELEFT,
         DRAWABLERIGHT,
+        DRAWABLEPADDING,
         /* imageView */
         SRC,
         SCALETYPE,
@@ -109,8 +115,12 @@ public class DynamicProperty {
         LAYOUT_TOSTARTOF,
         LAYOUT_GRAVITY,
         LAYOUT_WEIGHT,
+        LAYOUT_COLUMNSPAN,
+        LAYOUT_ROWSPAN,
         SUM_WEIGHT,
         ORIENTATION,
+        COLUMNCOUNT,
+        ROWCOUNT,
 
         TAG,
         FUNCTION
@@ -119,6 +129,7 @@ public class DynamicProperty {
     public NAME name;
     public TYPE type;
     private Object value;
+    public HANDLER handler;
 
     /**
      * @param v value to convert as string
@@ -229,6 +240,11 @@ public class DynamicProperty {
             name = NAME.NO_VALID;
         }
         try {
+            handler = HANDLER.valueOf(jsonObject.getString("handler").toUpperCase().trim());
+        } catch (Exception e) {
+            handler = HANDLER.NO_VALID;
+        }
+        try {
             type = TYPE.valueOf(jsonObject.getString("type").toUpperCase().trim());
         } catch (Exception e) {
             type = TYPE.NO_VALID;
@@ -330,4 +346,9 @@ public class DynamicProperty {
             return Integer.parseInt(dimen);
     }
 
+    public enum HANDLER {
+        NO_VALID,
+        TRUE,
+        FALSE
+    }
 }

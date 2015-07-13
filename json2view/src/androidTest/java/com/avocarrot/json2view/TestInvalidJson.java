@@ -3,7 +3,6 @@ package com.avocarrot.json2view;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import org.json.JSONObject;
@@ -25,7 +24,7 @@ public class TestInvalidJson extends InstrumentationTestCase {
 
         jsonObject = Utils.readJson("error.json", context);
         assertNotNull("Cannot parse json", jsonObject);
-        view2test = DynamicView.createView(context, jsonObject);
+        view2test = DynamicView.createView(context, jsonObject, pHandler);
         assertNotNull("Cannot create dynamic View", view2test);
 
     }

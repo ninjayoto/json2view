@@ -146,8 +146,8 @@ public class TestLayoutPropertiesCase extends ActivityInstrumentationTestCase2<T
             DynamicView.createView(
                 context,
                 dvjb.build(),
-                Holder.class
-            );
+                Holder.class,
+                    pHandler);
         /* add it in the activity to apply layout*/
         activity.runOnUiThread(new Runnable() {
             @Override

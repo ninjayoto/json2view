@@ -4,11 +4,12 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -22,7 +23,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by avocarrot on 11/12/2014.
@@ -35,8 +35,9 @@ public class DynamicHelper {
      *
      * @param view
      * @param properties
+     * @param pHandler
      */
-    public static String applyStyleProperties(View view, List<DynamicProperty> properties) {
+    public static String applyStyleProperties(View view, List<DynamicProperty> properties, Class pHandler) {
         String id = "";
         for (DynamicProperty dynProp : properties) {
             switch (dynProp.name) {
@@ -68,19 +69,27 @@ public class DynamicHelper {
                     applyPadding(view, dynProp);
                 }
                 break;
-                case PADDING_LEFT: {
+                case PADDINGLEFT: {
                     applyPadding(view, dynProp, 0);
                 }
                 break;
-                case PADDING_TOP: {
+                case PADDINGSTART: {
+                    applyPaddingStart(view, dynProp);
+                }
+                break;
+                case PADDINGTOP: {
                     applyPadding(view, dynProp, 1);
                 }
                 break;
-                case PADDING_RIGHT: {
+                case PADDINGRIGHT: {
                     applyPadding(view, dynProp, 2);
                 }
                 break;
-                case PADDING_BOTTOM: {
+                case PADDINGEND: {
+                    applyPaddingEnd(view, dynProp);
+                }
+                break;
+                case PADDINGBOTTOM: {
                     applyPadding(view, dynProp, 3);
                 }
                 break;
@@ -98,6 +107,10 @@ public class DynamicHelper {
                 break;
                 case MAXLINES: {
                     applyMaxLines(view, dynProp);
+                }
+                break;
+                case SINGLELINE: {
+                    applySingleLine(view, dynProp);
                 }
                 break;
                 case ORIENTATION: {
@@ -140,6 +153,10 @@ public class DynamicHelper {
                     applyCompoundDrawable(view, dynProp, 3);
                 }
                 break;
+                case DRAWABLEPADDING: {
+                    applyCompoundDrawablePadding(view, dynProp);
+                }
+                break;
                 case ENABLED: {
                     applyEnabled(view, dynProp);
                 }
@@ -165,12 +182,59 @@ public class DynamicHelper {
                 }
                 break;
                 case FUNCTION: {
-                    applyFunction(view, dynProp);
+                    applyFunction(view, dynProp, pHandler);
+                }
+                break;
+                case COLUMNCOUNT: {
+                    applyColumnCount(view, dynProp);
+                }
+                break;
+                case ROWCOUNT: {
+                    applyRowCount(view, dynProp);
                 }
                 break;
             }
         }
         return id;
+    }
+
+    private static void applyRowCount(View pView, DynamicProperty pDynProp) {
+        if (pView instanceof GridLayout) {
+            GridLayout view = (GridLayout) pView;
+            switch (pDynProp.type) {
+                case INTEGER: {
+                    int count = pDynProp.getValueInt();
+                    view.setRowCount(count);
+                }
+                break;
+            }
+        }
+    }
+
+    private static void applyColumnCount(View pView, DynamicProperty pDynProp) {
+        if (pView instanceof GridLayout) {
+            GridLayout view = (GridLayout) pView;
+            switch (pDynProp.type) {
+                case INTEGER: {
+                    int count = pDynProp.getValueInt();
+                    view.setColumnCount(count);
+                }
+                break;
+            }
+        }
+    }
+
+    private static void applyCompoundDrawablePadding(View pView, DynamicProperty pDynProp) {
+        if (pView instanceof TextView) {
+            TextView view = (TextView) pView;
+            switch (pDynProp.type) {
+                case DIMEN: {
+                    int padding = pDynProp.getValueInt();
+                    view.setCompoundDrawablePadding(padding);
+                }
+                break;
+            }
+        }
     }
 
     /**
@@ -210,6 +274,12 @@ public class DynamicHelper {
                         }
                     }
                     break;
+                    case LAYOUT_MARGINSTART: {
+                        if (params instanceof ViewGroup.MarginLayoutParams) {
+                            ((ViewGroup.MarginLayoutParams) params).setMarginStart(dynProp.getValueInt());
+                        }
+                    }
+                    break;
                     case LAYOUT_MARGINTOP: {
                         if (params instanceof ViewGroup.MarginLayoutParams) {
                             ((ViewGroup.MarginLayoutParams) params).topMargin = dynProp.getValueInt();
@@ -219,6 +289,12 @@ public class DynamicHelper {
                     case LAYOUT_MARGINRIGHT: {
                         if (params instanceof ViewGroup.MarginLayoutParams) {
                             ((ViewGroup.MarginLayoutParams) params).rightMargin = dynProp.getValueInt();
+                        }
+                    }
+                    break;
+                    case LAYOUT_MARGINEND: {
+                        if (params instanceof ViewGroup.MarginLayoutParams) {
+                            ((ViewGroup.MarginLayoutParams) params).setMarginEnd(dynProp.getValueInt());
                         }
                     }
                     break;
@@ -348,6 +424,8 @@ public class DynamicHelper {
                             case INTEGER: {
                                 if (params instanceof LinearLayout.LayoutParams)
                                     ((LinearLayout.LayoutParams) params).gravity = dynProp.getValueInt();
+                                if (params instanceof GridLayout.LayoutParams)
+                                    ((GridLayout.LayoutParams) params).setGravity(dynProp.getValueInt());
                             }
                             break;
                             case STRING: {
@@ -368,8 +446,50 @@ public class DynamicHelper {
                         }
                     }
                     break;
+                    case LAYOUT_COLUMNSPAN: {
+                        switch (dynProp.type) {
+                            case INTEGER: {
+                                if (params instanceof GridLayout.LayoutParams) {
+                                    if (((GridLayout.LayoutParams) params).columnSpec == null) {
+                                        ((GridLayout.LayoutParams) params).columnSpec = GridLayout.spec(GridLayout.UNDEFINED, dynProp.getValueInt());
+                                    } else {
+                                        Field field = ((GridLayout.LayoutParams) params).columnSpec.getClass().getDeclaredField("span");
+                                        field.setAccessible(true);
+                                        Object interval = field.get(((GridLayout.LayoutParams) params).columnSpec);
+                                        field = interval.getClass().getDeclaredField("min");
+                                        field.setAccessible(true);
+                                        int i = (int) field.get(interval);
+                                        ((GridLayout.LayoutParams) params).columnSpec = GridLayout.spec(i, dynProp.getValueInt());
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                    case LAYOUT_ROWSPAN: {
+                        switch (dynProp.type) {
+                            case INTEGER: {
+                                if (params instanceof GridLayout.LayoutParams)
+                                    if (((GridLayout.LayoutParams) params).rowSpec == null) {
+                                        ((GridLayout.LayoutParams) params).rowSpec = GridLayout.spec(GridLayout.UNDEFINED, dynProp.getValueInt());
+                                    } else {
+                                        Field field = ((GridLayout.LayoutParams) params).rowSpec.getClass().getDeclaredField("span");
+                                        field.setAccessible(true);
+                                        Object interval = field.get(((GridLayout.LayoutParams) params).rowSpec);
+                                        field = interval.getClass().getDeclaredField("min");
+                                        field.setAccessible(true);
+                                        int i = (int) field.get(interval);
+                                        ((GridLayout.LayoutParams) params).rowSpec = GridLayout.spec(i, dynProp.getValueInt());
+                                    }
+                            }
+                            break;
+                        }
+                    }
+                    break;
                 }
             } catch (Exception e) {
+                Log.e("DynamicHelper", "Error while setting layout", e);
             }
         }
 
@@ -378,7 +498,7 @@ public class DynamicHelper {
 
     public static ViewGroup.LayoutParams createLayoutParams(ViewGroup viewGroup) {
         ViewGroup.LayoutParams params = null;
-        if (viewGroup!=null) {
+        if (viewGroup != null) {
             try {
                 /* find parent viewGroup and create LayoutParams of that class */
                 Class layoutClass = viewGroup.getClass();
@@ -388,7 +508,11 @@ public class DynamicHelper {
                 String layoutParamsClassname = layoutClass.getName() + "$LayoutParams";
                 Class layoutParamsClass = Class.forName(layoutParamsClassname);
                 /* create the actual layoutParams object */
-                params = (ViewGroup.LayoutParams) layoutParamsClass.getConstructor(Integer.TYPE, Integer.TYPE).newInstance(new Object[]{ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT});
+                if (viewGroup instanceof GridLayout) {
+                    params = (ViewGroup.LayoutParams) layoutParamsClass.getConstructor().newInstance();
+                } else {
+                    params = (ViewGroup.LayoutParams) layoutParamsClass.getConstructor(Integer.TYPE, Integer.TYPE).newInstance(new Object[]{ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT});
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -458,14 +582,36 @@ public class DynamicHelper {
         if (view != null) {
             switch (property.type) {
                 case DIMEN: {
-                    int[] padding = new int[] {
-                      view.getPaddingLeft(),
-                      view.getPaddingTop(),
-                      view.getPaddingRight(),
-                      view.getPaddingBottom()
+                    int[] padding = new int[]{
+                            view.getPaddingLeft(),
+                            view.getPaddingTop(),
+                            view.getPaddingRight(),
+                            view.getPaddingBottom()
                     };
                     padding[position] = property.getValueInt();
                     view.setPadding(padding[0], padding[1], padding[2], padding[3]);
+                }
+                break;
+            }
+        }
+    }
+
+    public static void applyPaddingStart(View view, DynamicProperty property) {
+        if (view != null) {
+            switch (property.type) {
+                case DIMEN: {
+                    view.setPaddingRelative(property.getValueInt(), view.getPaddingRight(), view.getPaddingEnd(), view.getPaddingBottom());
+                }
+                break;
+            }
+        }
+    }
+
+    public static void applyPaddingEnd(View view, DynamicProperty property) {
+        if (view != null) {
+            switch (property.type) {
+                case DIMEN: {
+                    view.setPaddingRelative(view.getPaddingStart(), view.getPaddingRight(), property.getValueInt(), view.getPaddingBottom());
                 }
                 break;
             }
@@ -521,6 +667,7 @@ public class DynamicHelper {
             }
         }
     }
+
     /**
      * apply clickable in view
      */
@@ -612,6 +759,7 @@ public class DynamicHelper {
             }
         }
     }
+
     /**
      * apply the textStyle in textView
      */
@@ -641,6 +789,12 @@ public class DynamicHelper {
     public static void applyMaxLines(View view, DynamicProperty property) {
         if (view instanceof TextView) {
             ((TextView) view).setMaxLines(property.getValueInt());
+        }
+    }
+
+    public static void applySingleLine(View view, DynamicProperty property) {
+        if (view instanceof TextView) {
+            ((TextView) view).setSingleLine(property.getValueBoolean());
         }
     }
 
@@ -678,7 +832,8 @@ public class DynamicHelper {
                 case REF: {
                     try {
                         d[position] = view.getContext().getResources().getDrawable(getDrawableId(view.getContext(), property.getValueString()));
-                    } catch (Exception e) {}
+                    } catch (Exception e) {
+                    }
                 }
                 break;
                 case BASE64: {
@@ -787,7 +942,7 @@ public class DynamicHelper {
     /**
      * apply generic function in View
      */
-    public static void applyFunction(View view, DynamicProperty property) {
+    public static void applyFunction(View view, DynamicProperty property, Class pHandler) {
 
         if (property.type == DynamicProperty.TYPE.JSON) {
             try {
@@ -795,42 +950,56 @@ public class DynamicHelper {
 
                 String functionName = json.getString("function");
                 JSONArray args = json.getJSONArray("args");
+                String customHandler;
+                try {
+                    customHandler = property.handler == DynamicProperty.HANDLER.TRUE ? "true" : "false";
+                } catch (Exception e) {
+                    customHandler = "false";
+                }
+
+                boolean hasHandler = pHandler != null && "true".equals(customHandler);
 
                 Class[] argsClass;
                 Object[] argsValue;
-                if (args==null) {
+                if (args == null) {
                     argsClass = new Class[0];
                     argsValue = new Object[0];
                 } else {
                     try {
                         List<Class> classList = new ArrayList<>();
-                        List<Object> valueList= new ArrayList<>();
+                        List<Object> valueList = new ArrayList<>();
 
-                        int i=0;
+                        int i = 0;
                         int count = args.length();
-                        for (; i<count ; i++) {
+                        for (; i < count; i++) {
                             JSONObject argJsonObj = args.getJSONObject(i);
                             boolean isPrimitive = argJsonObj.has("primitive");
-                            String className = argJsonObj.getString( isPrimitive ? "primitive" : "class");
+                            String className = argJsonObj.getString(isPrimitive ? "primitive" : "class");
                             String classFullName = className;
                             if (!classFullName.contains("."))
                                 classFullName = "java.lang." + className;
                             Class clazz = Class.forName(classFullName);
                             if (isPrimitive) {
-                                Class primitiveType = (Class)clazz.getField("TYPE").get(null);
-                                classList.add( primitiveType );
+                                Class primitiveType = (Class) clazz.getField("TYPE").get(null);
+                                classList.add(primitiveType);
                             } else {
-                                classList.add( clazz );
+                                classList.add(clazz);
                             }
 
                             try {
-                                valueList.add( getFromJSON(argJsonObj, "value", clazz) );
+                                valueList.add(getFromJSON(argJsonObj, "value", clazz));
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
-                        argsClass = classList.toArray(new Class[classList.size()]);
-                        argsValue = valueList.toArray(new Object[valueList.size()]);
+                        argsClass = classList.toArray(new Class[classList.size() + (hasHandler ? 1 : 0)]);
+                        if (hasHandler) {
+                            argsClass[argsClass.length - 1] = Object.class;
+                        }
+                        argsValue = valueList.toArray(new Object[valueList.size() + (hasHandler ? 1 : 0)]);
+                        if (hasHandler) {
+                            argsValue[argsValue.length - 1] = view;
+                        }
                     } catch (Exception e) {
                         argsClass = new Class[0];
                         argsValue = new Object[0];
@@ -838,7 +1007,11 @@ public class DynamicHelper {
                 }
 
                 try {
-                    view.getClass().getMethod(functionName, argsClass).invoke(view, argsValue);
+                    if (hasHandler) {
+                        pHandler.getMethod(functionName, argsClass).invoke(pHandler.getConstructor().newInstance(), argsValue);
+                    } else {
+                        view.getClass().getMethod(functionName, argsClass).invoke(view, argsValue);
+                    }
                 } catch (SecurityException e) {
                 } catch (NoSuchMethodException e) {
                     e.printStackTrace();
@@ -850,7 +1023,6 @@ public class DynamicHelper {
         }
 
     }
-
 
 
     /**
@@ -901,7 +1073,7 @@ public class DynamicHelper {
      * convert densityPixel to scaledDensityPixel
      */
     public static float dpToSp(float dp) {
-        return (int) ( dpToPx(dp) / Resources.getSystem().getDisplayMetrics().scaledDensity);
+        return (int) (dpToPx(dp) / Resources.getSystem().getDisplayMetrics().scaledDensity);
     }
 
     /**
@@ -947,15 +1119,15 @@ public class DynamicHelper {
     }
 
     private static Object getFromJSON(JSONObject json, String name, Class clazz) throws JSONException {
-        if ((clazz == Integer.class)||(clazz == Integer.TYPE)) {
+        if ((clazz == Integer.class) || (clazz == Integer.TYPE)) {
             return json.getInt(name);
-        } else if ((clazz == Boolean.class)||(clazz == Boolean.TYPE)) {
+        } else if ((clazz == Boolean.class) || (clazz == Boolean.TYPE)) {
             return json.getBoolean(name);
-        } else if ((clazz == Double.class)||(clazz == Double.TYPE)) {
+        } else if ((clazz == Double.class) || (clazz == Double.TYPE)) {
             return json.getDouble(name);
-        } else if ((clazz == Float.class)||(clazz == Float.TYPE)) {
-            return (float)json.getDouble(name);
-        } else if ((clazz == Long.class)||(clazz == Long.TYPE)) {
+        } else if ((clazz == Float.class) || (clazz == Float.TYPE)) {
+            return (float) json.getDouble(name);
+        } else if ((clazz == Long.class) || (clazz == Long.TYPE)) {
             return json.getLong(name);
         } else if (clazz == String.class) {
             return json.getString(name);
@@ -971,7 +1143,7 @@ public class DynamicHelper {
         try {
             Class.forName(className);
             return true;
-        } catch(ClassNotFoundException ex) {
+        } catch (ClassNotFoundException ex) {
             return false;
         }
     }
